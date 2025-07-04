@@ -307,122 +307,9 @@ function_descriptions_multiple = [
         },
     },
 ]
-# --------------------------------------------------------------
-# LangChain Agent Implementation 
-# --------------------------------------------------------------
-
-# Define tool input schemas for LangChain
-class StockQuoteInput(BaseModel):
-    symbol: str = Field(description="Stock ticker symbol, e.g., AAPL for Apple Inc.")
-
-class StockTrendInput(BaseModel):
-    symbol: str = Field(description="Stock ticker symbol, e.g., TSLA for Tesla Inc.")
-    interval: str = Field(description="Time interval for trend data, e.g., '5min', '15min', '1hour', '1day', '1week'.")
-
-class StockHistoryInput(BaseModel):
-    symbol: str = Field(description="Stock ticker symbol, e.g., MSFT for Microsoft.")
-    start_date: str = Field(description="Start date for historical data (format: YYYY-MM-DD).")
-    end_date: str = Field(description="End date for historical data (format: YYYY-MM-DD).")
-
-# Create wrapper functions to solve the scope issue
-def get_stock_quote_wrapper(symbol):
-    return get_stock_quote(symbol)
-
-def get_stock_trend_wrapper(symbol, interval):
-    return get_stock_trend(symbol, interval)
-    
-def get_stock_history_wrapper(symbol, start_date, end_date):
-    return get_stock_history(symbol, start_date, end_date)
-
-# Define LangChain Tools
-class StockQuoteTool(BaseTool):
-    name: str = "get_stock_quote"
-    description: str = "Fetches the latest stock price for a given company. Use this when asked about current stock prices."
-    args_schema: Type[BaseModel] = StockQuoteInput
-    
-    def _run(self, symbol: str) -> str:
-        return get_stock_quote_wrapper(symbol)
-        
-    def _arun(self, symbol: str) -> str:
-        raise NotImplementedError("This tool does not support async")
-
-class StockTrendTool(BaseTool):
-    name: str = "get_stock_trend"
-    description: str = "Fetches stock trend data over a specific interval. Use this when asked about stock trends over time."
-    args_schema: Type[BaseModel] = StockTrendInput
-    
-    def _run(self, symbol: str, interval: str) -> str:
-        return get_stock_trend_wrapper(symbol, interval)
-        
-    def _arun(self, symbol: str, interval: str) -> str:
-        raise NotImplementedError("This tool does not support async")
-
-class StockHistoryTool(BaseTool):
-    name: str = "get_stock_history"
-    description: str = "Retrieves historical stock data for a specific date range. Use this when asked about past stock performance."
-    args_schema: Type[BaseModel] = StockHistoryInput
-    
-    def _run(self, symbol: str, start_date: str, end_date: str) -> str:
-        return get_stock_history_wrapper(symbol, start_date, end_date)
-        
-    def _arun(self, symbol: str, start_date: str, end_date: str) -> str:
-        raise NotImplementedError("This tool does not support async")
-
-# Function to run the LangChain Agent
-def run_langchain_agent():
-    """
-    Run an interactive command-line chatbot using LangChain agent.
-    """
-    print("\n========================================")
-    print("🤖 LangChain Stock Analysis Agent 📈")
-    print("Ask questions about stocks, prices, trends, or historical data.")
-    print("Type 'exit' to quit the conversation.")
-    print("========================================\n")
-    
-    # Initialize the language model
-    llm = ChatOpenAI(
-        temperature=0, 
-        model="gpt-3.5-turbo", 
-        api_key=os.getenv("OPENAI_API_KEY")
-    )
-    
-    # Create tools list
-    tools = [
-        StockQuoteTool(),
-        StockTrendTool(),
-        StockHistoryTool()
-    ]
-    
-    # Set up memory
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-    
-    # Initialize the agent
-    agent = initialize_agent(
-        tools,
-        llm,
-        agent=AgentType.OPENAI_FUNCTIONS,
-        verbose=True,  # Set to True to see the agent's thought process
-        memory=memory, 
-        agent_kwargs={"memory_key": "chat_history"}
-    )
-    
-    # Run the conversation loop
-    while True:
-        user_input = input("\n👤 You: ")
-        
-        if user_input.lower() in ['exit', 'quit', 'bye']:
-            print("\n🤖 Assistant: Goodbye! Have a great day!")
-            break
-        
-        try:
-            print("\n🔄 Processing...")
-            response = agent.invoke({"input": user_input})  # Using invoke instead of run
-            print(f"\n🤖 Assistant: {response['output']}")
-        except Exception as e:
-            print(f"\n🤖 Assistant: I encountered an error: {str(e)}")
 
 # --------------------------------------------------------------
-# Run Stock Analysis Chatbot (OpenAI Implementation)
+# Run Stock Analysis Chatbot
 # --------------------------------------------------------------
 
 def run_stock_analysis_chatbot():
@@ -435,7 +322,7 @@ def run_stock_analysis_chatbot():
     print("Type 'exit' to quit the conversation.")
     print("========================================\n")
     
-    # Initialize message history  
+    # Initialize message history
     message_history = [
         {
             "role": "system",
@@ -523,28 +410,10 @@ def run_stock_analysis_chatbot():
             
             # Add error response to history
             message_history.append({"role": "assistant", "content": error_message})
-# --------------------------------------------------------------
-# Main function to choose which implementation to run
-# --------------------------------------------------------------
-
-def main():
-    print("\nChoose which implementation to run:")
-    print("1. OpenAI Function Calling Implementation")
-    print("2. LangChain Agent Implementation")
-    
-    choice = input("\nEnter your choice (1 or 2): ")
-    
-    if choice == "1":
-        run_stock_analysis_chatbot()
-    elif choice == "2":
-        run_langchain_agent()
-    else:
-        print("Invalid choice. Defaulting to OpenAI Function Calling.")
-        run_stock_analysis_chatbot()
 
 # --------------------------------------------------------------
-# Run the selected implementation when script is executed
+# Run the chatbot if this script is executed directly
 # --------------------------------------------------------------
 
 if __name__ == "__main__":
-    main()
+    run_stock_analysis_chatbot()
