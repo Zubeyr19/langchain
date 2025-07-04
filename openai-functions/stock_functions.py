@@ -1,4 +1,5 @@
-# stock_functions.py
+# stock_functions.py by Zubeyr
+
 import json
 import requests
 import time
